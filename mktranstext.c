@@ -33,7 +33,7 @@ void usage(){
 	printf("%s-%s\n\n", PROG , THIS_VERSION);
 	printf("\tGenerate PNG Linux texts.\n\n");
 	printf("Usage :\n");
-	printf("%s [-L,-l,-S,-s,-T,-t,-n,-x,-y,-d,-z,-e.-p,-A,-B,-C,-J.-k,-c.-h,-v]\n", PROG);//L:l:S:s:T:t:n:x:y:d:z:e:p:A:B:C:Jkchv
+	printf("%s [-L,-l,-S,-s,-T,-t,-n,-x,-y,-d,-z,-e.-p,-A,-B,-C,-J.-k,-c.-h,-v]\n", PROG);
 	printf("\t-n [string] image file name\n");
 	printf("\t-L [string] label for an image, up to 36 chars, quoted (optional)\n"
 			"\talways centred\n");
@@ -82,6 +82,7 @@ struct colors {
 	double red;
 	double green;
 	double blue;
+	double alpha;
 	double red1;
 	double green1;
 	double blue1;
@@ -222,13 +223,13 @@ struct colors get_colors(const char *fp_color) {
 	b = atof(blue);
 	a = atof(alpha);
 	if ((r > 1.0) || (g > 1.0) || (b > 1.0) || (a > 1.0) ||
-	   (r < 0.0) || (g < 0.0) || (b <0.0) || (a <0.0))  {
+	   (r < 0.0) || (g < 0.0) || (b < 0.0) || (a < 0.0))  {
 		fprintf(stderr, "Color values are out of range\n");
 		exit (EXIT_FAILURE);
 	}
 
 	double r1, g1, b1, r2, g2, b2;
-	r1 = r; g1 = g; b1 = b;			
+	r1 = r; g1 = g; b1 = b;	
 	if ((r > 0.701) || (g > 0.701) || (b > 0.701)) {
 		r2 = r + 0.3;
 		g2 = g + 0.3;
@@ -247,6 +248,7 @@ struct colors get_colors(const char *fp_color) {
 	z.blue = b;
 	z.blue1 = b1;
 	z.blue2 = b2;
+	z.alpha = a;
 	return z;
 }
 
@@ -313,7 +315,7 @@ static void paint_img (char *label,
 	char posy[8];
 
 	char destimg[PATH_MAX];
-	double r, g, b, r1, g1, b1, r2, g2, b2;
+	double r, g, b, r1, g1, b1, r2, g2, b2, a;
 	struct colors col = get_colors(fp_color);
 	r = col.red;
 	r1 = col.red1;
@@ -324,6 +326,7 @@ static void paint_img (char *label,
 	b = col.blue;
 	b1 = col.blue1;
 	b2 = col.blue2;
+	a = col.alpha;
 	
 	cairo_surface_t *cs;
 	cs = cairo_image_surface_create
@@ -416,14 +419,14 @@ static void paint_img (char *label,
 
 		 /* font effect */
 		cairo_move_to(c, xposi , yposi);
-		cairo_set_source_rgba(c, rf, rf, rf, 0.55);
+		cairo_set_source_rgba(c, rf, rf, rf, a);
 		pango_cairo_show_layout (c, layout);
 
 		if (fc == 1) {
 			double fz = (double)font_sz;
 			fz = font_sz / 30; /* 30 default font size*/
 			cairo_move_to(c, xposi - (0.75 * fz) , yposi - (0.6 * fz));
-			cairo_set_source_rgba(c, or, og, ob, 0.65);
+			cairo_set_source_rgba(c, or, og, ob, a);
 			pango_cairo_show_layout (c, layout);
 		}
 		g_object_unref (layout);
@@ -478,14 +481,14 @@ static void paint_img (char *label,
 
 		 /* font effect */
 		cairo_move_to(c, xposi , yposi);
-		cairo_set_source_rgba(c, rf, rf, rf, 0.55);
+		cairo_set_source_rgba(c, rf, rf, rf, a);
 		pango_cairo_show_layout (c, layout);
 
 		if (fc == 1) {
 			double fz = (double)sfont_sz;
 			fz = sfont_sz / 30; /* 30 default font size*/
 			cairo_move_to(c, xposi - (0.75 * fz) , yposi - (0.6 * fz));
-			cairo_set_source_rgba(c, or, og, ob, 0.65);
+			cairo_set_source_rgba(c, or, og, ob, a);
 			pango_cairo_show_layout (c, layout);
 		}
 		g_object_unref (layout);
@@ -543,7 +546,6 @@ static void paint_img (char *label,
 		wrect = join_label.f_width;
 		hrect = join_label.f_height;
 		swrect = join_label.s_width;
-        //shrect = join_label.s_height;
 		pango_layout_set_width(layout, wrect * PANGO_SCALE);
 		pango_layout_set_width(slayout, swrect * PANGO_SCALE);
 		int tot_wrect;
@@ -557,20 +559,20 @@ static void paint_img (char *label,
 		}
 		 /* font effect */
 		cairo_move_to(c, xposi , yposi);
-		cairo_set_source_rgba(c, rf, rf, rf, 0.55);
+		cairo_set_source_rgba(c, rf, rf, rf, a);
 		pango_cairo_show_layout (c, layout);
 		cairo_move_to(c, sxposi , yposi);
-		cairo_set_source_rgba(c, rf, rf, rf, 0.55);
+		cairo_set_source_rgba(c, rf, rf, rf, a);
 		pango_cairo_show_layout (c, slayout);
 
 		if (fc == 1) {
 			double fz = (double)sfont_sz;
 			fz = sfont_sz / 30; /* 30 default font size*/
 			cairo_move_to(c, xposi - (0.75 * fz) , yposi - (0.6 * fz));
-			cairo_set_source_rgba(c, or, og, ob, 0.65);
+			cairo_set_source_rgba(c, or, og, ob, a);
 			pango_cairo_show_layout (c, layout);
 			cairo_move_to(c, sxposi - (0.75 * fz) , yposi - (0.6 * fz));
-			cairo_set_source_rgba(c, or, og, ob, 0.65);
+			cairo_set_source_rgba(c, or, og, ob, a);
 			pango_cairo_show_layout (c, slayout);
 		}
 		g_object_unref (layout);
@@ -625,14 +627,14 @@ static void paint_img (char *label,
 		
 		/* font effect */
 		cairo_move_to(c, xposi , yposi);
-		cairo_set_source_rgba(c, rf, rf, rf, 0.55);
+		cairo_set_source_rgba(c, rf, rf, rf, a);
 		pango_cairo_show_layout (c, tlayout);
 
 		if (fc == 1) {
 			double fz = (double)tfont_sz;
 			fz = tfont_sz / 30; /* 30 default font size*/
 			cairo_move_to(c, xposi - (0.75 * fz) , yposi - (0.6 * fz));
-			cairo_set_source_rgba(c, or, og, ob, 0.65);
+			cairo_set_source_rgba(c, or, og, ob, a);
 			pango_cairo_show_layout (c, tlayout);
 		}
 		g_object_unref (tlayout);
