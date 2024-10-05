@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <limits.h>
+#include <assert.h>
 
 #include <pango/pangocairo.h>
 
@@ -169,12 +170,13 @@ int split(const char *original, int offset, char **s1, char **s2)
 	return(1);
 }
 
-struct text_extents get_extents(PangoLayout *flayout, PangoLayout *slayout, int w) {
-	struct text_extents s;
+struct text_extents *get_extents(PangoLayout *flayout, PangoLayout *slayout, int w) {
+	struct text_extents *s = malloc(sizeof(struct text_extents));
+	assert(s != NULL);
 	int wrect, hrect;
 	if (flayout == NULL) {
-		s.f_width = 0;
-		s.f_height = 0;
+		s->f_width = 0;
+		s->f_height = 0;
 	} else {
 		PangoRectangle rect = { 0 };
 		pango_layout_get_extents(flayout, NULL, &rect);
@@ -182,12 +184,12 @@ struct text_extents get_extents(PangoLayout *flayout, PangoLayout *slayout, int 
 		wrect = rect.width;
 		wrect = ((wrect) < (w)) ? (wrect) : (w);
 		hrect = rect.height;
-		s.f_width = wrect;
-		s.f_height = hrect;
+		s->f_width = wrect;
+		s->f_height = hrect;
 	}
 	if (slayout == NULL) {
-		s.s_width = 0;
-		s.s_height = 0;
+		s->s_width = 0;
+		s->s_height = 0;
 	} else {
 		PangoRectangle rect = { 0 };
 		pango_layout_get_extents(slayout, NULL, &rect);
@@ -195,10 +197,15 @@ struct text_extents get_extents(PangoLayout *flayout, PangoLayout *slayout, int 
 		wrect = rect.width;
 		wrect = ((wrect) < (w)) ? (wrect) : (w);
 		hrect = rect.height;
-		s.s_width = wrect;
-		s.s_height = hrect;
+		s->s_width = wrect;
+		s->s_height = hrect;
 	}
 	return s;	
+}
+
+void text_extents_destroy(struct text_extents *s) {
+	assert(s != NULL);
+	free(s);
 }
 
 struct colors get_colors(const char *fp_color) {
@@ -405,9 +412,10 @@ static void paint_img (char *label,
 		/* position of text */
 		int xposi, yposi;
 		int wrect, hrect;
-		struct text_extents first_label = get_extents(layout, NULL, wdth);
-		wrect = first_label.f_width;
-		hrect = first_label.f_height;
+		struct text_extents *first_label = get_extents(layout, NULL, wdth);
+		wrect = first_label->f_width;
+		hrect = first_label->f_height;
+		text_extents_destroy(first_label);
 		pango_layout_set_width(layout, wrect * PANGO_SCALE);
 		if (!eicon) {
 			xposi = (wdth / 2) - (wrect / 2);
@@ -467,9 +475,10 @@ static void paint_img (char *label,
 		/* position of text */
 		int xposi, yposi;
 		int wrect, hrect;
-		struct text_extents second_label = get_extents(NULL, layout, wdth);
-		wrect = second_label.s_width;
-		hrect = second_label.s_height;
+		struct text_extents *second_label = get_extents(NULL, layout, wdth);
+		wrect = second_label->s_width;
+		hrect = second_label->s_height;
+		text_extents_destroy(second_label);
 		pango_layout_set_width(layout, wrect * PANGO_SCALE);
 		if (!eicon) {
 			xposi = (wdth / 2) - (wrect / 2);
@@ -542,10 +551,11 @@ static void paint_img (char *label,
 		/* position of text */
 		int xposi, yposi, sxposi;
 		int wrect, hrect, swrect;
-		struct text_extents join_label = get_extents(layout, slayout, wdth);
-		wrect = join_label.f_width;
-		hrect = join_label.f_height;
-		swrect = join_label.s_width;
+		struct text_extents *join_label = get_extents(layout, slayout, wdth);
+		wrect = join_label->f_width;
+		hrect = join_label->f_height;
+		swrect = join_label->s_width;
+		text_extents_destroy(join_label);
 		pango_layout_set_width(layout, wrect * PANGO_SCALE);
 		pango_layout_set_width(slayout, swrect * PANGO_SCALE);
 		int tot_wrect;
